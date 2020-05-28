@@ -12,6 +12,7 @@ function do_test() {
     else
         printf "[\033[32;1m  OK  \033[0m] %s\n" "${test_case}"
     fi
+    cat "tests/${test_case}.actual" | sed 's/^/         |/' | sed 's/$/|/'
 }
 
 echo "Creating database..."
