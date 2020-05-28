@@ -46,24 +46,6 @@ CREATE TABLE cells (
     display CHAR DEFAULT NULL
 );
 
-CREATE TRIGGER update_display
-AFTER INSERT ON cells
-BEGIN
-    UPDATE cells
-        SET display = CASE
-            WHEN is_bomb THEN '*'
-            ELSE (SELECT CASE 
-                         WHEN SUM(is_bomb) > 0 THEN SUM(is_bomb)
-                         ELSE ' '
-                         END
-                 FROM cells c2 
-                 WHERE c2.rownum >= cells.rownum-1 AND c2.rownum <= cells.rownum+1
-                   AND c2.colnum >= cells.colnum-1 AND c2.colnum <= cells.colnum+1)
-        END
-        ;
-END;
-
-
 CREATE VIEW output AS WITH RECURSIVE
     row_nums AS (
         SELECT DISTINCT rownum FROM cells ORDER BY rownum
@@ -79,7 +61,16 @@ CREATE VIEW output AS WITH RECURSIVE
         SELECT 
             cells.rownum, 
             cells.colnum, 
-            prev.display || cells.display,
+            prev.display || CASE 
+                WHEN cells.is_bomb THEN '*'
+                ELSE (SELECT CASE 
+                         WHEN SUM(is_bomb) > 0 THEN SUM(is_bomb)
+                         ELSE ' '
+                         END
+                 FROM cells c2 
+                 WHERE c2.rownum >= cells.rownum-1 AND c2.rownum <= cells.rownum+1
+                   AND c2.colnum >= cells.colnum-1 AND c2.colnum <= cells.colnum+1)
+            END,
             cells.colnum = (SELECT MAX(colnum) FROM cells WHERE rownum = prev.rownum)
         FROM row_strs prev INNER JOIN cells
         ON cells.colnum = prev.colnum + 1 AND cells.rownum = prev.rownum
