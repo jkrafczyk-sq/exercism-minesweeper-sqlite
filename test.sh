@@ -38,5 +38,3 @@ sqlite3 "${DB}" < ./schema.sql
 for testcase in tests/*.sql; do
     do_test "$(basename $testcase .sql)"
 done
-#do_test single-bomb-in-center-3x3
-#do_test empty-field
