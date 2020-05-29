@@ -15,7 +15,7 @@ BEGIN
     --INSERT INTO table(...) SELECT (...) is equivalent to Oracles SELECT () INTO table()
     INSERT INTO cells(rownum, colnum, is_bomb)
         WITH RECURSIVE cell AS (
-            --"initial select": Insert column 1, with first character of row, and everything but the first character as 'remainder'
+            --"initial select": Insert column 1, with first character of the new row, and everything but the first character as 'remainder'
             SELECT 
                 NEW.rownum as rownum, 
                 1 AS colnum, 
@@ -48,6 +48,7 @@ CREATE VIEW output AS WITH RECURSIVE
         SELECT DISTINCT rownum FROM cells ORDER BY rownum
     ),
     row_strs AS (
+        -- initial select: column '0', empty string
         SELECT 
             row_nums.rownum AS rownum, 
             0 AS colnum,
@@ -55,6 +56,7 @@ CREATE VIEW output AS WITH RECURSIVE
             0 AS is_last
         FROM row_nums
      UNION ALL 
+        -- recursive select: stringify the next column and append that to the current columns 'display'
         SELECT 
             cells.rownum, 
             cells.colnum, 
