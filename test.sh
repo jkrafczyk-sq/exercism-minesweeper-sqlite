@@ -6,6 +6,7 @@ DB="test.db"
 function do_test() {
     local test_case="$1"
     local status=0
+    echo "INSERT INTO input(cells) VALUES ('RESET');" | sqlite3 "${DB}"
     sqlite3 "${DB}" < "tests/${test_case}.sql"  >& /dev/null || true
     sqlite3 "${DB}" < print.sql > "tests/${test_case}.actual"
     if [[ -f "tests/${test_case}.expected_error" ]]; then

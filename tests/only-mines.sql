@@ -1,4 +1,4 @@
-INSERT INTO input(rownum, cells) VALUES 
- (1, '***'),
- (2, '***'),
- (3, '***');
+INSERT INTO input(cells) VALUES 
+ ('***'),
+ ('***'),
+ ('***');

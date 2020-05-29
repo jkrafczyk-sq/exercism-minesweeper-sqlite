@@ -1,4 +1,4 @@
-CREATE VIEW input (rownum, cells) AS SELECT (1, '');
+CREATE VIEW input (cells) AS SELECT ('');
 
 CREATE TABLE field_info(
     rows INTEGER NOT NULL,
@@ -15,15 +15,17 @@ CREATE TABLE cells (
 CREATE TRIGGER insert_cell 
 INSTEAD OF INSERT ON input 
 BEGIN
-    --If we are inserting the first row of a field, delete all existing data in 'cells' table:
-    DELETE FROM cells WHERE NEW.rownum = 1;
-    DELETE FROM field_info WHERE NEW.rownum = 1;
+    --If input is "RESET", clear the entire field (field_info and cells) and don't process this line as input:
+    DELETE FROM cells WHERE NEW.cells = 'RESET';
+    DELETE FROM field_info WHERE NEW.cells = 'RESET';
+    SELECT RAISE(IGNORE) WHERE NEW.cells = 'RESET';
 
     INSERT INTO field_info (rows, columns)
     SELECT
         0,
          LENGTH(NEW.cells)
-    WHERE NEW.rownum = 1;
+    WHERE NOT EXISTS(SELECT * FROM field_info);
+
     UPDATE field_info SET rows = rows + 1;
 
     UPDATE 
@@ -42,7 +44,7 @@ BEGIN
         WITH RECURSIVE cell AS (
             --"initial select": Insert column 1, with first character of the new row, and everything but the first character as 'remainder'
             SELECT 
-                NEW.rownum as rownum, 
+                (SELECT rows FROM field_info) as rownum, 
                 1 AS colnum, 
                 CASE 0 
                     WHEN SUBSTR(NEW.cells, 1, 1) = '*' THEN 0
@@ -51,7 +53,8 @@ BEGIN
                 SUBSTR(NEW.cells, 2) AS remainder
             UNION ALL 
             --"recursive select": As long as the remainder is not empty, insert more cells with the first char of remainder
-            SELECT NEW.rownum, 
+            SELECT 
+                (SELECT rows FROM field_info), 
                 prev.colnum+1 , 
                 CASE 0 
                     WHEN SUBSTR(prev.remainder, 1, 1) = '*' THEN 0
