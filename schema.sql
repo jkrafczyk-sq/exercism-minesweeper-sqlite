@@ -1,5 +1,11 @@
 CREATE VIEW input (rownum, cells) AS SELECT (1, '');
 
+CREATE TABLE field_info(
+    rows INTEGER NOT NULL,
+    columns INTEGER NOT NULL,
+    error VARCHAR DEFAULT NULL
+);
+
 CREATE TABLE cells (
     rownum INTEGER NOT NULL,
     colnum INTEGER NOT NULL,
@@ -11,6 +17,23 @@ INSTEAD OF INSERT ON input
 BEGIN
     --If we are inserting the first row of a field, delete all existing data in 'cells' table:
     DELETE FROM cells WHERE NEW.rownum = 1;
+    DELETE FROM field_info WHERE NEW.rownum = 1;
+
+    INSERT INTO field_info (rows, columns)
+    SELECT
+        0,
+         LENGTH(NEW.cells)
+    WHERE NEW.rownum = 1;
+    UPDATE field_info SET rows = rows + 1;
+
+    UPDATE 
+        field_info 
+    SET error = 'New row has ' || LENGTH(NEW.cells) || ' columns, but expected ' || columns 
+    WHERE LENGTH(NEW.cells) != columns;
+
+    SELECT RAISE(FAIL, 
+        'New row has incorrect number of columns'
+    ) WHERE LENGTH(NEW.cells) != (SELECT columns FROM field_info);
 
     --Parse 'cells' string for current row and insert into cells table
     --Syntax in sqlite is a bit weird for this.
