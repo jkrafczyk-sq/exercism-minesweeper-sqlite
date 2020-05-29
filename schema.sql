@@ -1,11 +1,14 @@
+-- Insert commands or board-rows into this view
 CREATE VIEW input (line) AS SELECT ('');
 
+-- Table for general information about shape and status of the current board.
 CREATE TABLE board_info(
     rows INTEGER NOT NULL,
     columns INTEGER NOT NULL,
     error VARCHAR DEFAULT NULL
 );
 
+-- Internal representation of the minesweeper board: Position and bomb: yes/no status of each point/cell on the board.
 CREATE TABLE cells (
     rownum INTEGER NOT NULL,
     colnum INTEGER NOT NULL,
@@ -20,6 +23,7 @@ BEGIN
     DELETE FROM board_info WHERE NEW.line = 'RESET';
     SELECT RAISE(IGNORE) WHERE NEW.line = 'RESET';
 
+    --Initialize board size, if not already present:
     INSERT INTO board_info (rows, columns)
     SELECT
         0,
@@ -28,6 +32,7 @@ BEGIN
 
     UPDATE board_info SET rows = rows + 1;
 
+    -- Validate that the new row matches the existing board shape. If not, update board status and raise an error. 
     UPDATE 
         board_info 
     SET error = 'New row has ' || LENGTH(NEW.line) || ' columns, but expected ' || columns 
@@ -38,7 +43,7 @@ BEGIN
     ) WHERE LENGTH(NEW.line) != (SELECT columns FROM board_info);
 
     --Parse 'cells' string for current row and insert into cells table
-    --Syntax in sqlite is a bit weird for this.
+    --Syntax in sqlite is a bit weird for this:
     --INSERT INTO table(...) SELECT (...) is equivalent to Oracles SELECT () INTO table()
     INSERT INTO cells(rownum, colnum, is_bomb)
         WITH RECURSIVE cell AS (
@@ -65,6 +70,7 @@ BEGIN
         SELECT rownum, colnum, is_bomb FROM cell;
 END;
 
+-- Minesweeper field renderer:
 CREATE VIEW output AS WITH RECURSIVE
     row_nums AS (
         SELECT DISTINCT rownum FROM cells ORDER BY rownum
@@ -83,16 +89,16 @@ CREATE VIEW output AS WITH RECURSIVE
             cells.rownum, 
             cells.colnum, 
             prev.display || CASE 
-                WHEN cells.is_bomb THEN '*'
+                WHEN cells.is_bomb THEN '*' ---bombs -> '*'
                 ELSE (SELECT CASE 
-                         WHEN SUM(is_bomb) > 0 THEN SUM(is_bomb)
-                         ELSE ' '
+                         WHEN SUM(is_bomb) > 0 THEN SUM(is_bomb)  -- bombs in neighbourhood -> count
+                         ELSE ' '                                 -- no bombs -> ' '
                          END
                  FROM cells c2 
                  WHERE c2.rownum >= cells.rownum-1 AND c2.rownum <= cells.rownum+1
                    AND c2.colnum >= cells.colnum-1 AND c2.colnum <= cells.colnum+1)
             END,
-            cells.colnum = (SELECT MAX(colnum) FROM cells WHERE rownum = prev.rownum)
+            cells.colnum = (SELECT MAX(colnum) FROM cells WHERE rownum = prev.rownum)  --Is this the last column?
         FROM row_strs prev INNER JOIN cells
         ON cells.colnum = prev.colnum + 1 AND cells.rownum = prev.rownum
     ) 
