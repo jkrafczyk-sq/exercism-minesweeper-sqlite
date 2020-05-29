@@ -3,6 +3,12 @@ CREATE TABLE input (
     cells VARCHAR NOT NULL
 );
 
+CREATE TABLE cells (
+    rownum INTEGER NOT NULL,
+    colnum INTEGER NOT NULL,
+    is_bomb INTEGER NOT NULL
+);
+
 CREATE TRIGGER insert_cell 
 BEFORE INSERT ON input 
 BEGIN
@@ -36,12 +42,6 @@ BEGIN
         ) 
         SELECT rownum, colnum, is_bomb FROM cell;
 END;
-
-CREATE TABLE cells (
-    rownum INTEGER NOT NULL,
-    colnum INTEGER NOT NULL,
-    is_bomb INTEGER NOT NULL
-);
 
 CREATE VIEW output AS WITH RECURSIVE
     row_nums AS (
