@@ -13,7 +13,7 @@ BEGIN
     --Parse 'cells' string for current row and insert into cells table
     --Syntax in sqlite is a bit weird for this.
     --INSERT INTO table(...) SELECT (...) is equivalent to Oracles SELECT () INTO table()
-    INSERT INTO cells(rownum, colnum, is_bomb, display)
+    INSERT INTO cells(rownum, colnum, is_bomb)
         WITH RECURSIVE cell AS (
             --"initial select": Insert column 1, with first character of row, and everything but the first character as 'remainder'
             SELECT 
@@ -22,8 +22,7 @@ BEGIN
                 CASE 0 
                     WHEN SUBSTR(NEW.cells, 1, 1) = '*' THEN 0
                     ELSE 1
-                END AS is_bomb, 
-                '?' as display, 
+                END AS is_bomb,
                 SUBSTR(NEW.cells, 2) AS remainder
             UNION ALL 
             --"recursive select": As long as the remainder is not empty, insert more cells with the first char of remainder
@@ -33,17 +32,15 @@ BEGIN
                     WHEN SUBSTR(prev.remainder, 1, 1) = '*' THEN 0
                     ELSE 1
                 END AS is_bomb,
-                '?',
                 SUBSTR(prev.remainder, 2) FROM cell prev WHERE prev.remainder != ''
         ) 
-        SELECT rownum, colnum, is_bomb, display FROM cell;
+        SELECT rownum, colnum, is_bomb FROM cell;
 END;
 
 CREATE TABLE cells (
     rownum INTEGER NOT NULL,
     colnum INTEGER NOT NULL,
-    is_bomb INTEGER NOT NULL,
-    display CHAR DEFAULT NULL
+    is_bomb INTEGER NOT NULL
 );
 
 CREATE VIEW output AS WITH RECURSIVE
