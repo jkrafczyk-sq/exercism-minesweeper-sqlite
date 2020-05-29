@@ -1,1 +1,0 @@
-SELECT display FROM output;

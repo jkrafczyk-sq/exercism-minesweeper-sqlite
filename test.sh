@@ -8,9 +8,9 @@ function do_test() {
     local status=0
     echo "INSERT INTO input(line) VALUES ('RESET');" | sqlite3 "${DB}"
     sqlite3 "${DB}" < "tests/${test_case}.sql"  >& /dev/null || true
-    sqlite3 "${DB}" < print.sql > "tests/${test_case}.actual"
+    echo "SELECT display FROM output;" | sqlite3 "${DB}" > "tests/${test_case}.actual"
     if [[ -f "tests/${test_case}.expected_error" ]]; then
-        local actual_err="$(echo "SELECT error FROM field_info WHERE error IS NOT NULL;" | sqlite3 "${DB}")"
+        local actual_err="$(echo "SELECT error FROM board_info WHERE error IS NOT NULL;" | sqlite3 "${DB}")"
         local expected_err="$(cat tests/${test_case}.expected_error)"
         if [[ "${expected_err}" = "${actual_err}" ]]; then
             printf "[\033[32;1m  OK  \033[0m] %s\n" "${test_case}"
@@ -27,8 +27,8 @@ function do_test() {
         printf "[\033[32;1m  OK  \033[0m] %s\n" "${test_case}"
     fi
     (
-        echo "SELECT 'Field size: ' || rows || 'x' || columns FROM field_info;" | sqlite3 "${DB}"
-        echo "SELECT 'Returned error message: ' || error FROM field_info WHERE error IS NOT NULL;" | sqlite3 "${DB}"
+        echo "SELECT 'Field size: ' || rows || 'x' || columns FROM board_info;" | sqlite3 "${DB}"
+        echo "SELECT 'Returned error message: ' || error FROM board_info WHERE error IS NOT NULL;" | sqlite3 "${DB}"
         cat "tests/${test_case}.actual" | sed 's/^/|/' | sed 's/$/|/'
     ) | sed 's/^/         /' 
 }

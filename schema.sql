@@ -1,6 +1,6 @@
 CREATE VIEW input (line) AS SELECT ('');
 
-CREATE TABLE field_info(
+CREATE TABLE board_info(
     rows INTEGER NOT NULL,
     columns INTEGER NOT NULL,
     error VARCHAR DEFAULT NULL
@@ -15,27 +15,27 @@ CREATE TABLE cells (
 CREATE TRIGGER insert_cell 
 INSTEAD OF INSERT ON input 
 BEGIN
-    --If input is "RESET", clear the entire field (field_info and cells) and don't process this line as input:
+    --If input is "RESET", clear the entire field (board_info and cells) and don't process this line as input:
     DELETE FROM cells WHERE NEW.line = 'RESET';
-    DELETE FROM field_info WHERE NEW.line = 'RESET';
+    DELETE FROM board_info WHERE NEW.line = 'RESET';
     SELECT RAISE(IGNORE) WHERE NEW.line = 'RESET';
 
-    INSERT INTO field_info (rows, columns)
+    INSERT INTO board_info (rows, columns)
     SELECT
         0,
          LENGTH(NEW.line)
-    WHERE NOT EXISTS(SELECT * FROM field_info);
+    WHERE NOT EXISTS(SELECT * FROM board_info);
 
-    UPDATE field_info SET rows = rows + 1;
+    UPDATE board_info SET rows = rows + 1;
 
     UPDATE 
-        field_info 
+        board_info 
     SET error = 'New row has ' || LENGTH(NEW.line) || ' columns, but expected ' || columns 
     WHERE LENGTH(NEW.line) != columns;
 
     SELECT RAISE(FAIL, 
         'New row has incorrect number of columns'
-    ) WHERE LENGTH(NEW.line) != (SELECT columns FROM field_info);
+    ) WHERE LENGTH(NEW.line) != (SELECT columns FROM board_info);
 
     --Parse 'cells' string for current row and insert into cells table
     --Syntax in sqlite is a bit weird for this.
@@ -44,7 +44,7 @@ BEGIN
         WITH RECURSIVE cell AS (
             --"initial select": Insert column 1, with first character of the new row, and everything but the first character as 'remainder'
             SELECT 
-                (SELECT rows FROM field_info) as rownum, 
+                (SELECT rows FROM board_info) as rownum, 
                 1 AS colnum, 
                 CASE 0 
                     WHEN SUBSTR(NEW.line, 1, 1) = '*' THEN 0
@@ -54,7 +54,7 @@ BEGIN
             UNION ALL 
             --"recursive select": As long as the remainder is not empty, insert more cells with the first char of remainder
             SELECT 
-                (SELECT rows FROM field_info), 
+                (SELECT rows FROM board_info), 
                 prev.colnum+1 , 
                 CASE 0 
                     WHEN SUBSTR(prev.remainder, 1, 1) = '*' THEN 0
