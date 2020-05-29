@@ -1,4 +1,4 @@
-INSERT INTO input(cells) VALUES 
+INSERT INTO input(line) VALUES 
     ('***'),
     ('* *'),
     ('***');

@@ -1,4 +1,4 @@
-CREATE VIEW input (cells) AS SELECT ('');
+CREATE VIEW input (line) AS SELECT ('');
 
 CREATE TABLE field_info(
     rows INTEGER NOT NULL,
@@ -16,26 +16,26 @@ CREATE TRIGGER insert_cell
 INSTEAD OF INSERT ON input 
 BEGIN
     --If input is "RESET", clear the entire field (field_info and cells) and don't process this line as input:
-    DELETE FROM cells WHERE NEW.cells = 'RESET';
-    DELETE FROM field_info WHERE NEW.cells = 'RESET';
-    SELECT RAISE(IGNORE) WHERE NEW.cells = 'RESET';
+    DELETE FROM cells WHERE NEW.line = 'RESET';
+    DELETE FROM field_info WHERE NEW.line = 'RESET';
+    SELECT RAISE(IGNORE) WHERE NEW.line = 'RESET';
 
     INSERT INTO field_info (rows, columns)
     SELECT
         0,
-         LENGTH(NEW.cells)
+         LENGTH(NEW.line)
     WHERE NOT EXISTS(SELECT * FROM field_info);
 
     UPDATE field_info SET rows = rows + 1;
 
     UPDATE 
         field_info 
-    SET error = 'New row has ' || LENGTH(NEW.cells) || ' columns, but expected ' || columns 
-    WHERE LENGTH(NEW.cells) != columns;
+    SET error = 'New row has ' || LENGTH(NEW.line) || ' columns, but expected ' || columns 
+    WHERE LENGTH(NEW.line) != columns;
 
     SELECT RAISE(FAIL, 
         'New row has incorrect number of columns'
-    ) WHERE LENGTH(NEW.cells) != (SELECT columns FROM field_info);
+    ) WHERE LENGTH(NEW.line) != (SELECT columns FROM field_info);
 
     --Parse 'cells' string for current row and insert into cells table
     --Syntax in sqlite is a bit weird for this.
@@ -47,10 +47,10 @@ BEGIN
                 (SELECT rows FROM field_info) as rownum, 
                 1 AS colnum, 
                 CASE 0 
-                    WHEN SUBSTR(NEW.cells, 1, 1) = '*' THEN 0
+                    WHEN SUBSTR(NEW.line, 1, 1) = '*' THEN 0
                     ELSE 1
                 END AS is_bomb,
-                SUBSTR(NEW.cells, 2) AS remainder
+                SUBSTR(NEW.line, 2) AS remainder
             UNION ALL 
             --"recursive select": As long as the remainder is not empty, insert more cells with the first char of remainder
             SELECT 
