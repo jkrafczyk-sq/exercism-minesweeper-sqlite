@@ -1,7 +1,4 @@
-CREATE TABLE input (
-    rownum INTEGER NOT NULL,
-    cells VARCHAR NOT NULL
-);
+CREATE VIEW input (rownum, cells) AS SELECT (1, '');
 
 CREATE TABLE cells (
     rownum INTEGER NOT NULL,
@@ -10,10 +7,9 @@ CREATE TABLE cells (
 );
 
 CREATE TRIGGER insert_cell 
-BEFORE INSERT ON input 
+INSTEAD OF INSERT ON input 
 BEGIN
-    --If we are inserting the first row of a field, delete all existing data in 'cells' and 'input' tables:
-    DELETE FROM input WHERE NEW.rownum = 1;
+    --If we are inserting the first row of a field, delete all existing data in 'cells' table:
     DELETE FROM cells WHERE NEW.rownum = 1;
 
     --Parse 'cells' string for current row and insert into cells table
